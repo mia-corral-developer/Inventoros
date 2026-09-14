@@ -6,6 +6,7 @@ import Button from '@/Components/ui/Button.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { availableLocales, setLocale } from '@/i18n';
 
 const { t } = useI18n();
 
@@ -69,6 +70,13 @@ const preferencesForm = useForm({
 const submitPreferences = () => {
     preferencesForm.patch(route('settings.account.update.preferences'), {
         preserveScroll: true,
+        // Apply the language immediately: the server persists the preference
+        // (SetLocale reads it on the next request) and setLocale updates the
+        // running i18n instance + cookie/store so the UI translates without a
+        // hard reload — Inertia swaps the component without re-booting i18n.
+        onSuccess: () => {
+            setLocale(preferencesForm.language);
+        },
     });
 };
 
@@ -330,9 +338,13 @@ const toggles = [
                                     v-model="preferencesForm.language"
                                     :class="fieldInput"
                                 >
-                                    <option value="en">English</option>
-                                    <option value="es">Spanish</option>
-                                    <option value="fr">French</option>
+                                    <option
+                                        v-for="loc in availableLocales"
+                                        :key="loc.code"
+                                        :value="loc.code"
+                                    >
+                                        {{ loc.flag }} {{ loc.name }}
+                                    </option>
                                 </select>
                                 <p v-if="preferencesForm.errors.language" :class="fieldError">{{ preferencesForm.errors.language }}</p>
                             </div>

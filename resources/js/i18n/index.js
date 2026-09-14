@@ -57,10 +57,24 @@ export const availableLocales = [
 ]
 
 export function setLocale(locale) {
-    i18n.global.locale.value = locale
+    applyLocale(locale)
     localStorage.setItem('locale', locale)
-    document.documentElement.lang = locale
     document.cookie = `locale=${locale};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`
+}
+
+/**
+ * Apply a locale to the running i18n instance without persisting it.
+ *
+ * Used on boot to honour the locale the server resolved from the user's saved
+ * preference (shared by HandleInertiaRequests as the `locale` prop), so a
+ * language chosen in Settings actually takes effect after a reload.
+ */
+export function applyLocale(locale) {
+    if (typeof locale !== 'string' || locale === '') {
+        return
+    }
+    i18n.global.locale.value = locale
+    document.documentElement.lang = locale
 }
 
 export default i18n
