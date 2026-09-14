@@ -1,7 +1,7 @@
 import '../css/app.css';
 import './bootstrap';
 
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
@@ -12,6 +12,19 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 // Glob patterns for pages
 const pages = import.meta.glob('./Pages/**/*.vue');
 const pluginPages = import.meta.glob('../../plugins/*/resources/js/Pages/**/*.vue');
+
+// Keep the running i18n instance in sync with the server-resolved locale on
+// every Inertia navigation. Without this the language only applied on a hard
+// page load: after a client-side transition (e.g. logging in, which navigates
+// to /dashboard without re-booting the app) the new `locale` prop arrived but
+// was never applied, so the UI stayed in the boot language until a manual
+// reload. The shared prop already carries the correct value on every response.
+router.on('navigate', (event) => {
+    const locale = event?.detail?.page?.props?.locale;
+    if (locale) {
+        applyLocale(locale);
+    }
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

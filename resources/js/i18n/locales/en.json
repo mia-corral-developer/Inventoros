@@ -107,7 +107,17 @@
     "account": "Account",
     "profile": "Profile",
     "logOut": "Log Out",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "returns": "Returns",
+    "stockTransfers": "Stock Transfers",
+    "stockAudits": "Stock Audits",
+    "sections": {
+      "workspace": "Workspace",
+      "catalog": "Catalog",
+      "stock": "Stock",
+      "insights": "Insights",
+      "admin": "Admin"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

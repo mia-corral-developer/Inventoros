@@ -81,6 +81,19 @@
     "updating": "Actualizando..."
   },
   "nav": {
+    "warehouses": "Almacenes",
+    "workOrders": "Órdenes de trabajo",
+    "notifications": "Notificaciones",
+    "returns": "Devoluciones",
+    "stockTransfers": "Transferencias de stock",
+    "stockAudits": "Auditorías de stock",
+    "sections": {
+      "workspace": "Espacio de trabajo",
+      "catalog": "Catálogo",
+      "stock": "Stock",
+      "insights": "Análisis",
+      "admin": "Administración"
+    },
     "dashboard": "Panel de control",
     "inventory": "Inventario",
     "orders": "Pedidos",

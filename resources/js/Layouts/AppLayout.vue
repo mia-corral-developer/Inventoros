@@ -94,51 +94,52 @@ const user = computed(() => page.props.auth?.user);
 const workspaceName = computed(() => page.props.auth?.organization?.name || 'Inventoros');
 
 /**
- * Nav schema. Each section is { label, items: [{ icon, name, href, active, perm? }] }.
- * Render is data-driven so adding a section is one line.
+ * Nav schema. Each section is { labelKey, items: [{ icon, nameKey, href, active, perm? }] }.
+ * Render is data-driven so adding a section is one line. Labels are i18n keys
+ * resolved with t() at render time, so the sidebar follows the active locale.
  */
 const sections = computed(() => [
     {
-        label: 'Workspace',
+        labelKey: 'nav.sections.workspace',
         items: [
-            { icon: LayoutGrid, name: 'Dashboard', href: route('dashboard'), active: ['dashboard'] },
-            { icon: Boxes, name: 'Inventory', href: route('products.index'), active: ['products.*'], perm: 'view_products' },
-            { icon: ShoppingCart, name: 'Orders', href: route('orders.index'), active: ['orders.*'], perm: 'view_orders' },
-            { icon: Undo2, name: 'Returns', href: route('returns.index'), active: ['returns.*'], perm: 'manage_returns' },
-            { icon: ClipboardList, name: 'Purchase Orders', href: route('purchase-orders.index'), active: ['purchase-orders.*'], perm: 'view_purchase_orders' },
-            { icon: Truck, name: 'Suppliers', href: route('suppliers.index'), active: ['suppliers.*'], perm: 'view_suppliers' },
+            { icon: LayoutGrid, nameKey: 'nav.dashboard', href: route('dashboard'), active: ['dashboard'] },
+            { icon: Boxes, nameKey: 'nav.inventory', href: route('products.index'), active: ['products.*'], perm: 'view_products' },
+            { icon: ShoppingCart, nameKey: 'nav.orders', href: route('orders.index'), active: ['orders.*'], perm: 'view_orders' },
+            { icon: Undo2, nameKey: 'nav.returns', href: route('returns.index'), active: ['returns.*'], perm: 'manage_returns' },
+            { icon: ClipboardList, nameKey: 'nav.purchaseOrders', href: route('purchase-orders.index'), active: ['purchase-orders.*'], perm: 'view_purchase_orders' },
+            { icon: Truck, nameKey: 'nav.suppliers', href: route('suppliers.index'), active: ['suppliers.*'], perm: 'view_suppliers' },
         ],
     },
     {
-        label: 'Catalog',
+        labelKey: 'nav.sections.catalog',
         items: [
-            { icon: Tag, name: 'Categories', href: route('categories.index'), active: ['categories.*'], perm: 'manage_categories' },
-            { icon: MapPin, name: 'Locations', href: route('locations.index'), active: ['locations.*'], perm: 'manage_locations' },
-            { icon: Warehouse, name: 'Warehouses', href: route('warehouses.index'), active: ['warehouses.*'], perm: 'manage_warehouses' },
+            { icon: Tag, nameKey: 'nav.categories', href: route('categories.index'), active: ['categories.*'], perm: 'manage_categories' },
+            { icon: MapPin, nameKey: 'nav.locations', href: route('locations.index'), active: ['locations.*'], perm: 'manage_locations' },
+            { icon: Warehouse, nameKey: 'nav.warehouses', href: route('warehouses.index'), active: ['warehouses.*'], perm: 'manage_warehouses' },
         ],
     },
     {
-        label: 'Stock',
+        labelKey: 'nav.sections.stock',
         items: [
-            { icon: ArrowLeftRight, name: 'Stock Transfers', href: route('stock-transfers.index'), active: ['stock-transfers.*'], perm: 'view_stock_transfers' },
-            { icon: ScanLine, name: 'Stock Audits', href: route('stock-audits.index'), active: ['stock-audits.*'], perm: 'view_stock_audits' },
-            { icon: Hammer, name: 'Work Orders', href: route('work-orders.index'), active: ['work-orders.*'], perm: 'manage_stock' },
+            { icon: ArrowLeftRight, nameKey: 'nav.stockTransfers', href: route('stock-transfers.index'), active: ['stock-transfers.*'], perm: 'view_stock_transfers' },
+            { icon: ScanLine, nameKey: 'nav.stockAudits', href: route('stock-audits.index'), active: ['stock-audits.*'], perm: 'view_stock_audits' },
+            { icon: Hammer, nameKey: 'nav.workOrders', href: route('work-orders.index'), active: ['work-orders.*'], perm: 'manage_stock' },
         ],
     },
     {
-        label: 'Insights',
+        labelKey: 'nav.sections.insights',
         items: [
-            { icon: FileSpreadsheet, name: 'Import / Export', href: route('import-export.index'), active: ['import-export.*'], perm: 'manage_import_export' },
-            { icon: BarChart3, name: 'Reports', href: route('reports.index'), active: ['reports.*'], perm: 'view_reports' },
+            { icon: FileSpreadsheet, nameKey: 'nav.importExport', href: route('import-export.index'), active: ['import-export.*'], perm: 'manage_import_export' },
+            { icon: BarChart3, nameKey: 'nav.reports', href: route('reports.index'), active: ['reports.*'], perm: 'view_reports' },
         ],
     },
     {
-        label: 'Admin',
+        labelKey: 'nav.sections.admin',
         items: [
-            { icon: Users, name: 'Users', href: route('users.index'), active: ['users.*'], perm: 'manage_users' },
-            { icon: ShieldCheck, name: 'Roles', href: route('roles.index'), active: ['roles.*'], perm: 'manage_roles' },
-            { icon: Puzzle, name: 'Plugins', href: route('plugins.index'), active: ['plugins.*'], perm: 'manage_plugins' },
-            { icon: Settings2, name: 'Settings', href: route('settings.account.index'), active: ['settings.*', 'webhooks.*', 'account.*'] },
+            { icon: Users, nameKey: 'nav.users', href: route('users.index'), active: ['users.*'], perm: 'manage_users' },
+            { icon: ShieldCheck, nameKey: 'nav.roles', href: route('roles.index'), active: ['roles.*'], perm: 'manage_roles' },
+            { icon: Puzzle, nameKey: 'nav.plugins', href: route('plugins.index'), active: ['plugins.*'], perm: 'manage_plugins' },
+            { icon: Settings2, nameKey: 'nav.settings', href: route('settings.account.index'), active: ['settings.*', 'webhooks.*', 'account.*'] },
         ],
     },
 ]);
@@ -223,14 +224,14 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
 
             <!-- Nav -->
             <nav class="flex-1 mt-4 overflow-y-auto ds-scroll px-3 pb-4">
-                <div v-for="section in visibleSections" :key="section.label" class="mb-5">
+                <div v-for="section in visibleSections" :key="section.labelKey" class="mb-5">
                     <p class="px-2 mb-1 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
-                        {{ section.label }}
+                        {{ t(section.labelKey) }}
                     </p>
                     <div class="space-y-px">
                         <Link
                             v-for="item in section.items"
-                            :key="item.name"
+                            :key="item.nameKey"
                             :href="item.href"
                             :class="[
                                 'group flex items-center gap-2.5 h-8 px-2.5 rounded-md text-[13px] font-medium',
@@ -245,7 +246,7 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
                                 :size="15"
                                 :class="isActive(item) ? 'text-brand' : 'text-text-tertiary group-hover:text-text-secondary'"
                             />
-                            <span class="truncate flex-1">{{ item.name }}</span>
+                            <span class="truncate flex-1">{{ t(item.nameKey) }}</span>
                         </Link>
                     </div>
                 </div>
