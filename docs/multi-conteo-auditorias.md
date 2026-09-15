@@ -1,10 +1,8 @@
 # Multi-conteo en Auditorías de Stock — Plan de trabajo
 
-> **Estado:** propuesta para discutir (no implementado).
-> **Objetivo:** traer a Inventoros las funcionalidades de **multi-conteo** que ya
-> existen y están en producción en **TOMFIC**, adaptadas al stack de Inventoros
-> (Laravel 13 + Inertia + Vue 3 + Postgres).
-> **Rama propuesta:** `feat/audit-multi-round` (fork `mia-corral-developer/Inventoros`).
+> **Estado:** Fases 1–4 implementadas y verificadas (1445/1445 tests verdes);
+> Fase 5 (reportes/export) pendiente. Rama `feat/audit-multi-round`
+> (fork `mia-corral-developer/Inventoros`). Pendiente de merge a `main`.
 
 ---
 
