@@ -7,7 +7,7 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import i18n, { applyLocale } from './i18n';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Zellia';
 
 // Glob patterns for pages
 const pages = import.meta.glob('./Pages/**/*.vue');
