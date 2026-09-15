@@ -162,7 +162,8 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
         <!-- Mobile top bar -->
         <div class="md:hidden fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-surface-base border-b border-border-subtle">
             <Link :href="route('dashboard')" class="flex flex-col justify-center">
-                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[30px] w-auto shrink-0" />
+                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[30px] w-auto shrink-0 dark:hidden" />
+                <img src="/images/brand/zellia_logo_light_transparent.png" alt="Zellia" class="hidden h-[30px] w-auto shrink-0 dark:block" />
                 <span class="mt-1 text-[11px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
             </Link>
             <button
@@ -200,7 +201,8 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
                     class="flex items-center gap-2 w-full px-2 py-2 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
                 >
                     <div class="flex flex-col justify-center min-w-0">
-                        <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[38px] w-auto shrink-0" />
+                        <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[38px] w-auto shrink-0 dark:hidden" />
+                        <img src="/images/brand/zellia_logo_light_transparent.png" alt="Zellia" class="hidden h-[38px] w-auto shrink-0 dark:block" />
                         <span class="mt-1 text-[12px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
                     </div>
                     <span class="flex-1"></span>

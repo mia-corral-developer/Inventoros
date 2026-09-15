@@ -25,7 +25,12 @@ const logout = () => router.post(route('logout'));
                     <img
                         src="/images/brand/zellia_logo_transparent.png"
                         alt="Zellia"
-                        class="h-5 w-auto shrink-0"
+                        class="h-5 w-auto shrink-0 dark:hidden"
+                    />
+                    <img
+                        src="/images/brand/zellia_logo_light_transparent.png"
+                        alt="Zellia"
+                        class="hidden h-5 w-auto shrink-0 dark:block"
                     />
                     <span class="truncate text-sm font-semibold tracking-tight">{{ title }}</span>
                 </Link>
