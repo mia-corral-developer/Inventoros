@@ -12,6 +12,7 @@ use App\Models\Inventory\ProductLocation;
 use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockAudit;
 use App\Models\Inventory\StockAuditItem;
+use App\Models\User;
 use App\Services\StockAuditRoundService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -95,12 +96,51 @@ class StockAuditController extends Controller
         return Inertia::render('StockAudits/Create', [
             'locations' => $locations,
             'products' => $products,
+            'users' => $this->selectableCounters($organizationId),
             'auditTypes' => [
                 'full' => 'Full Audit',
                 'cycle' => 'Cycle Count',
                 'spot' => 'Spot Check',
             ],
         ]);
+    }
+
+    /**
+     * Users that can be assigned to a counting round: anyone in the org.
+     *
+     * Deliberately not gated on manage_stock_audits — a counter only needs to
+     * be able to record counts, not to administer audits.
+     *
+     * @return \Illuminate\Support\Collection<int, array{id:int,name:string}>
+     */
+    private function selectableCounters(int $organizationId)
+    {
+        return User::where('organization_id', $organizationId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    /**
+     * Normalise the per-round counter map coming from the form.
+     *
+     * The form sends `assignments: { "1": 5, "2": "" }`; empty values mean
+     * "any counter may take this round", so they collapse to null.
+     *
+     * @param  array<int|string, int|string|null>  $assignments
+     * @return array<int, int|null>
+     */
+    private function normalizeAssignments(array $assignments): array
+    {
+        $out = [];
+        foreach ($assignments as $round => $userId) {
+            $round = (int) $round;
+            if ($round < 1) {
+                continue;
+            }
+            $out[$round] = ($userId === '' || $userId === null) ? null : (int) $userId;
+        }
+
+        return $out;
     }
 
     /**
@@ -123,6 +163,8 @@ class StockAuditController extends Controller
         }
 
         $audit = DB::transaction(function () use ($validated, $organizationId, $request) {
+            $roundsTotal = (int) ($validated['rounds_total'] ?? 1);
+
             $audit = StockAudit::create([
                 'organization_id' => $organizationId,
                 'audit_number' => StockAudit::generateAuditNumber($organizationId),
@@ -130,6 +172,8 @@ class StockAuditController extends Controller
                 'description' => $validated['description'] ?? null,
                 'status' => 'draft',
                 'audit_type' => $validated['audit_type'],
+                'rounds_total' => max(1, $roundsTotal),
+                'blind_count' => (bool) ($validated['blind_count'] ?? ($roundsTotal > 1)),
                 'warehouse_location_id' => $validated['warehouse_location_id'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $request->user()->id,
@@ -158,6 +202,12 @@ class StockAuditController extends Controller
                 ]);
             }
 
+            // Multi-round: open the regular counting rounds now so counters can
+            // be assigned while the audit is still a draft.
+            if ($audit->isMultiRound()) {
+                app(StockAuditRoundService::class)->openRounds($audit, $this->normalizeAssignments($validated['assignments'] ?? []));
+            }
+
             return $audit;
         });
 
@@ -184,6 +234,7 @@ class StockAuditController extends Controller
             'items.variant',
             'items.location',
             'items.countedByUser',
+            'rounds.assignee',
         ]);
 
         // Calculate summary stats
@@ -193,6 +244,16 @@ class StockAuditController extends Controller
             ->filter(fn ($item) => $item->counted_quantity !== $item->system_quantity)
             ->count();
 
+        $roundService = app(StockAuditRoundService::class);
+
+        // Variance view (product × round) — only meaningful for multi-round
+        // audits; legacy audits return an empty array.
+        $variance = $stockAudit->isMultiRound() ? $roundService->variance($stockAudit) : [];
+
+        $divergentCount = $stockAudit->isMultiRound()
+            ? $stockAudit->items->where('status', StockAuditRoundService::ITEM_DIVERGENT)->count()
+            : 0;
+
         return Inertia::render('StockAudits/Show', [
             'audit' => $stockAudit,
             'summary' => [
@@ -200,7 +261,19 @@ class StockAuditController extends Controller
                 'counted_items' => $countedItems,
                 'discrepancies' => $discrepancies,
                 'progress' => $totalItems > 0 ? round(($countedItems / $totalItems) * 100) : 0,
+                'divergent_items' => $divergentCount,
             ],
+            'variance' => $variance,
+            'rounds' => $stockAudit->rounds->map(fn ($r) => [
+                'id' => $r->id,
+                'round_number' => $r->round_number,
+                'label' => $r->label,
+                'is_tiebreak' => $r->is_tiebreak,
+                'status' => $r->status,
+                'assigned_to' => $r->assigned_to,
+                'assignee_name' => $r->assignee?->name,
+            ])->values(),
+            'canManageAudits' => $request->user()->hasAnyPermission(['manage_stock_audits']),
         ]);
     }
 
@@ -232,6 +305,10 @@ class StockAuditController extends Controller
         return Inertia::render('StockAudits/Edit', [
             'audit' => $stockAudit,
             'locations' => $locations,
+            'users' => $this->selectableCounters($organizationId),
+            'assignments' => $stockAudit->rounds
+                ->mapWithKeys(fn ($r) => [$r->round_number => $r->assigned_to])
+                ->all(),
             'auditTypes' => [
                 'full' => 'Full Audit',
                 'cycle' => 'Cycle Count',
@@ -273,9 +350,21 @@ class StockAuditController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'audit_type' => $validated['audit_type'],
+            'rounds_total' => max(1, (int) ($validated['rounds_total'] ?? 1)),
+            'blind_count' => (bool) ($validated['blind_count'] ?? false),
             'warehouse_location_id' => $validated['warehouse_location_id'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ]);
+
+        // Re-sync the round rows + assignments. Safe here: only drafts are
+        // editable and drafts can have no counts yet.
+        $service = app(StockAuditRoundService::class);
+        if ($stockAudit->isMultiRound()) {
+            $service->openRounds($stockAudit->fresh(), $this->normalizeAssignments($validated['assignments'] ?? []));
+        } else {
+            // Dropped back to a single round: remove any previously opened rounds.
+            $stockAudit->rounds()->delete();
+        }
 
         return redirect()->route('stock-audits.show', $stockAudit)
             ->with('success', 'Stock audit updated successfully.');
@@ -333,6 +422,12 @@ class StockAuditController extends Controller
             foreach ($stockAudit->items as $item) {
                 $currentStock = $item->product->stock;
                 $item->update(['system_quantity' => $currentStock]);
+            }
+
+            // Guarantee the round rows exist before counting begins (audits
+            // created before a round was configured, or drafts edited down/up).
+            if ($stockAudit->isMultiRound()) {
+                app(StockAuditRoundService::class)->openRounds($stockAudit);
             }
 
             $stockAudit->update([
@@ -498,6 +593,74 @@ class StockAuditController extends Controller
         return response()->json([
             'message' => 'Count updated successfully',
             'item' => $item->fresh(['product', 'countedByUser']),
+        ]);
+    }
+
+    /**
+     * Open the on-demand tiebreak round (C3) for a multi-round audit.
+     *
+     * Called by an admin from the variance view when regular rounds disagree.
+     */
+    public function openTiebreak(Request $request, StockAudit $stockAudit): JsonResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (! $stockAudit->isMultiRound()) {
+            return response()->json(['message' => 'This audit does not use multiple rounds.'], 422);
+        }
+
+        if ($stockAudit->status !== 'in_progress') {
+            return response()->json(['message' => 'The audit is not in progress.'], 422);
+        }
+
+        $round = app(StockAuditRoundService::class)->openTiebreakRound($stockAudit);
+
+        return response()->json([
+            'message' => "Tiebreak round {$round->label} is now open.",
+            'round' => [
+                'round_number' => $round->round_number,
+                'label' => $round->label,
+                'is_tiebreak' => $round->is_tiebreak,
+            ],
+        ]);
+    }
+
+    /**
+     * Resolve a divergent item by hand (admin decision).
+     *
+     * The whole point of the multi-count is to surface shrinkage — so an item
+     * that stays divergent can only be closed by an explicit human decision,
+     * never silently.
+     */
+    public function resolveItem(Request $request, StockAudit $stockAudit, StockAuditItem $item): JsonResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($item->stock_audit_id !== $stockAudit->id) {
+            return response()->json(['message' => 'Item does not belong to this audit'], 422);
+        }
+
+        if ($stockAudit->status !== 'in_progress') {
+            return response()->json(['message' => 'The audit is not in progress.'], 422);
+        }
+
+        $validated = $request->validate([
+            'resolved_quantity' => 'required|integer|min:0',
+        ]);
+
+        app(StockAuditRoundService::class)->resolveManually(
+            $item,
+            (int) $validated['resolved_quantity'],
+            $request->user(),
+        );
+
+        return response()->json([
+            'message' => 'Item resolved.',
+            'item' => $item->fresh(['product']),
         ]);
     }
 }

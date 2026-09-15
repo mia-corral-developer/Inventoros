@@ -4,15 +4,16 @@ import PageHeader from '@/Components/ui/PageHeader.vue';
 import Card from '@/Components/ui/Card.vue';
 import Button from '@/Components/ui/Button.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ArrowLeft, Info } from 'lucide-vue-next';
+import { ArrowLeft, Info, Users, Eye, EyeOff } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
 const props = defineProps({
     locations: Array,
     products: Array,
+    users: Array,
     auditTypes: Object,
 });
 
@@ -23,7 +24,27 @@ const form = useForm({
     warehouse_location_id: '',
     notes: '',
     product_ids: [],
+    rounds_total: 1,
+    blind_count: false,
+    assignments: {},
 });
+
+// Round numbers 1..rounds_total, used to render one counter selector per round.
+const roundNumbers = computed(() =>
+    Array.from({ length: Math.max(1, Number(form.rounds_total) || 1) }, (_, i) => i + 1)
+);
+
+// Keep `assignments` in sync with the chosen number of rounds.
+watch(
+    () => form.rounds_total,
+    (n) => {
+        const total = Math.max(1, Number(n) || 1);
+        const next = {};
+        for (let i = 1; i <= total; i++) next[i] = form.assignments[i] ?? '';
+        form.assignments = next;
+    },
+    { immediate: true }
+);
 
 const productSearch = ref('');
 const selectAllProducts = ref(false);
@@ -270,6 +291,67 @@ const fieldCheckbox = 'rounded border-border-subtle bg-surface-canvas text-brand
                             All active products{{ form.warehouse_location_id ? ' at the selected location' : '' }} will be automatically included in this audit.
                             You can review items after creation.
                         </p>
+                    </div>
+                </div>
+            </Card>
+
+            <!-- Counting Rounds (multi-count / blind count) -->
+            <Card :padded="false">
+                <div class="px-5 pt-5">
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <Users :size="16" />
+                        Counting Rounds
+                    </h3>
+                    <p class="mt-1 text-sm text-text-tertiary">
+                        Count the same inventory with several people, blind, and let the system compare.
+                        Leave at 1 for a normal single count.
+                    </p>
+                </div>
+                <div class="space-y-4 p-5">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label :class="fieldLabel">Number of counting rounds</label>
+                            <input
+                                v-model.number="form.rounds_total"
+                                type="number"
+                                min="1"
+                                max="10"
+                                step="1"
+                                :class="fieldInput"
+                            />
+                            <p :class="fieldHint">
+                                1 = single count (default). 2 = blind count + tiebreak. Up to 10.
+                            </p>
+                            <p v-if="form.errors.rounds_total" :class="fieldError">{{ form.errors.rounds_total }}</p>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Counting mode</label>
+                            <label class="mt-2 flex items-center gap-2">
+                                <input type="checkbox" v-model="form.blind_count" :class="fieldCheckbox" />
+                                <span class="flex items-center gap-1 text-sm text-text-secondary">
+                                    <component :is="form.blind_count ? EyeOff : Eye" :size="14" />
+                                    Blind count (counters can't see each other's numbers)
+                                </span>
+                            </label>
+                            <p v-if="form.errors.blind_count" :class="fieldError">{{ form.errors.blind_count }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="form.rounds_total > 1">
+                        <p :class="fieldLabel">Assign a counter to each round (optional)</p>
+                        <div class="space-y-2">
+                            <div v-for="n in roundNumbers" :key="n" class="flex items-center gap-3">
+                                <span class="w-10 text-sm font-medium text-text-secondary">C{{ n }}</span>
+                                <select v-model="form.assignments[n]" :class="fieldInput">
+                                    <option value="">Any counter</option>
+                                    <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p :class="fieldHint">
+                            The system flags items where rounds disagree; a tiebreak round or an admin decision settles them.
+                        </p>
+                        <p v-if="form.errors.assignments" :class="fieldError">{{ form.errors.assignments }}</p>
                     </div>
                 </div>
             </Card>

@@ -24,6 +24,9 @@ const { t } = useI18n();
 const props = defineProps({
     audit: Object,
     summary: Object,
+    variance: Array,
+    rounds: Array,
+    canManageAudits: Boolean,
 });
 
 const processing = ref(false);
@@ -31,6 +34,100 @@ const editingItemId = ref(null);
 const countValue = ref(0);
 const countNotes = ref('');
 const savingCount = ref(false);
+
+// --- Multi-round (variance view) state ---
+const resolvingItemId = ref(null);
+const resolveValue = ref(0);
+const tiebreakProcessing = ref(false);
+
+const isMultiRound = computed(() => (props.audit.rounds_total || 1) > 1);
+const roundColumns = computed(() => (props.rounds || []).map((r) => r.round_number));
+const hasTiebreak = computed(() => (props.rounds || []).some((r) => r.is_tiebreak));
+const divergentCount = computed(() => (props.variance || []).filter((v) => v.divergent).length);
+const unresolvedCount = computed(
+    () => (props.variance || []).filter((v) => v.divergent || v.resolved_quantity === null).length
+);
+
+const colHeader = (n) => {
+    const r = (props.rounds || []).find((x) => x.round_number === n);
+    return r ? r.label : `C${n}`;
+};
+
+// A round value is "off" when it disagrees with the resolved number, or — if
+// nothing is resolved yet — when the rounds disagree among themselves.
+const isRoundValueDivergent = (row, val) => {
+    if (val === null) return false;
+    if (row.resolved_quantity !== null) return val !== row.resolved_quantity;
+    const distinct = [...new Set(Object.values(row.rounds).filter((v) => v !== null))];
+    return distinct.length > 1;
+};
+
+const methodLabel = (method) =>
+    ({ agreement: 'Agreement', tiebreak: 'Tiebreak', manual: 'Manual' }[method] || '-');
+
+const methodVariant = (method) =>
+    ({ agreement: 'success', tiebreak: 'info', manual: 'brand' }[method] || 'neutral');
+
+const startResolve = (row) => {
+    resolvingItemId.value = row.item_id;
+    resolveValue.value = row.system_quantity;
+};
+
+const cancelResolve = () => {
+    resolvingItemId.value = null;
+};
+
+const saveResolve = async (row) => {
+    try {
+        const response = await fetch(
+            route('stock-audits.items.resolve', { stockAudit: props.audit.id, item: row.item_id }),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+                body: JSON.stringify({ resolved_quantity: parseInt(resolveValue.value) }),
+            }
+        );
+
+        if (response.ok) {
+            resolvingItemId.value = null;
+            router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] });
+        } else {
+            const data = await response.json();
+            alert(data.message || 'Failed to resolve item');
+        }
+    } catch (error) {
+        alert('An error occurred while resolving the item');
+    }
+};
+
+const openTiebreak = async () => {
+    tiebreakProcessing.value = true;
+    try {
+        const response = await fetch(route('stock-audits.tiebreak', props.audit.id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+        });
+
+        if (response.ok) {
+            router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] });
+        } else {
+            const data = await response.json();
+            alert(data.message || 'Failed to open the tiebreak round');
+        }
+    } catch (error) {
+        alert('An error occurred while opening the tiebreak round');
+    } finally {
+        tiebreakProcessing.value = false;
+    }
+};
 
 const statusVariant = (status) =>
     ({
@@ -56,6 +153,7 @@ const itemStatusVariant = (status) =>
         counted: 'info',
         verified: 'success',
         adjusted: 'brand',
+        divergent: 'danger',
     }[status] || 'neutral');
 
 const getItemStatusLabel = (status) => {
@@ -64,6 +162,7 @@ const getItemStatusLabel = (status) => {
         'counted': 'Counted',
         'verified': 'Verified',
         'adjusted': 'Adjusted',
+        'divergent': 'Divergent',
     };
     return labels[status] || status;
 };
@@ -292,6 +391,118 @@ const thClass = 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wide
                     <p class="whitespace-pre-line text-sm text-text-primary">{{ audit.notes }}</p>
                 </div>
             </div>
+        </Card>
+
+        <!-- Variance by Round (multi-count) -->
+        <Card v-if="isMultiRound" :padded="false" class="mt-4">
+            <div class="flex flex-wrap items-start justify-between gap-3 px-5 pt-5">
+                <div>
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <Layers :size="16" />
+                        Variance by Round
+                    </h3>
+                    <p class="mt-1 text-xs text-text-tertiary">
+                        Every item with its value per counting round. Divergences are highlighted.
+                        <span v-if="audit.blind_count">Blind count: counters could not see each other's numbers.</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Badge v-if="divergentCount > 0" variant="danger" size="sm">
+                        {{ divergentCount }} divergent
+                    </Badge>
+                    <Button
+                        v-if="canManageAudits && !hasTiebreak && divergentCount > 0 && audit.status === 'in_progress'"
+                        size="sm"
+                        :loading="tiebreakProcessing"
+                        :disabled="tiebreakProcessing"
+                        @click="openTiebreak"
+                    >
+                        Open Tiebreak Round
+                    </Button>
+                </div>
+            </div>
+            <div class="mt-4 w-full overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-border-subtle">
+                            <th :class="thClass">Product</th>
+                            <th :class="[thClass, 'text-right']">System</th>
+                            <th v-for="n in roundColumns" :key="n" :class="[thClass, 'text-right']">{{ colHeader(n) }}</th>
+                            <th :class="[thClass, 'text-right']">Resolved</th>
+                            <th :class="thClass">Method</th>
+                            <th v-if="canManageAudits && audit.status === 'in_progress'" :class="thClass">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template v-for="row in variance" :key="row.item_id">
+                            <tr
+                                class="border-b border-border-subtle transition-colors last:border-b-0 hover:bg-surface-overlay"
+                                :class="row.divergent ? 'bg-status-danger/5' : ''"
+                            >
+                                <td class="px-6 py-4 text-sm text-text-primary">
+                                    <div class="font-medium">{{ row.label || ('#' + row.product_id) }}</div>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-text-secondary">
+                                    {{ row.system_quantity }}
+                                </td>
+                                <td
+                                    v-for="n in roundColumns"
+                                    :key="n"
+                                    class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums"
+                                    :class="isRoundValueDivergent(row, row.rounds[n]) ? 'font-semibold text-status-danger' : 'text-text-primary'"
+                                >
+                                    {{ row.rounds[n] !== null && row.rounds[n] !== undefined ? row.rounds[n] : '—' }}
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-semibold tabular-nums text-text-primary">
+                                    {{ row.resolved_quantity !== null ? row.resolved_quantity : '—' }}
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4">
+                                    <Badge :variant="methodVariant(row.resolution_method)" size="sm">
+                                        {{ row.divergent && !row.resolution_method ? 'Unresolved' : methodLabel(row.resolution_method) }}
+                                    </Badge>
+                                </td>
+                                <td v-if="canManageAudits && audit.status === 'in_progress'" class="whitespace-nowrap px-6 py-4">
+                                    <button
+                                        v-if="row.divergent && resolvingItemId !== row.item_id"
+                                        @click="startResolve(row)"
+                                        class="text-sm font-medium text-brand hover:underline"
+                                    >
+                                        Resolve&hellip;
+                                    </button>
+                                    <div v-else-if="resolvingItemId === row.item_id" class="flex items-center gap-2">
+                                        <input
+                                            v-model.number="resolveValue"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            class="h-8 w-20 rounded-md border border-border-subtle bg-surface-canvas px-2 text-right text-sm text-text-primary ds-focus-ring"
+                                            @keyup.enter="saveResolve(row)"
+                                            @keyup.escape="cancelResolve"
+                                        />
+                                        <Button size="sm" @click="saveResolve(row)">Save</Button>
+                                        <Button variant="secondary" size="sm" @click="cancelResolve">Cancel</Button>
+                                    </div>
+                                    <span v-else class="text-xs text-text-tertiary">&mdash;</span>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr v-if="!variance || variance.length === 0">
+                            <td
+                                :colspan="roundColumns.length + (canManageAudits && audit.status === 'in_progress' ? 5 : 4)"
+                                class="px-6 py-10 text-center text-sm text-text-tertiary"
+                            >
+                                No counts recorded yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p
+                v-if="unresolvedCount > 0 && audit.status === 'in_progress'"
+                class="border-t border-border-subtle px-5 py-3 text-xs text-status-warning"
+            >
+                Completing this audit is blocked while any item is unresolved — resolve them here or open the tiebreak round first.
+            </p>
         </Card>
 
         <!-- Audit Items / Counting Interface -->

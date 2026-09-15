@@ -111,6 +111,8 @@ Route::delete('/stock-audits/{stockAudit}', [StockAuditController::class, 'destr
 Route::post('/stock-audits/{stockAudit}/start', [StockAuditController::class, 'start'])->name('stock-audits.start')->middleware('permission:manage_stock_audits');
 Route::post('/stock-audits/{stockAudit}/complete', [StockAuditController::class, 'complete'])->name('stock-audits.complete')->middleware('permission:manage_stock_audits');
 Route::post('/stock-audits/{stockAudit}/items/{item}/count', [StockAuditController::class, 'updateCount'])->name('stock-audits.items.count')->middleware('permission:manage_stock_audits');
+Route::post('/stock-audits/{stockAudit}/tiebreak', [StockAuditController::class, 'openTiebreak'])->name('stock-audits.tiebreak')->middleware('permission:manage_stock_audits');
+Route::post('/stock-audits/{stockAudit}/items/{item}/resolve', [StockAuditController::class, 'resolveItem'])->name('stock-audits.items.resolve')->middleware('permission:manage_stock_audits');
 
 // Stock Adjustments - Permission based
 Route::get('/stock-adjustments', [StockAdjustmentController::class, 'index'])->name('stock-adjustments.index')->middleware('permission:manage_stock');
