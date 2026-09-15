@@ -160,10 +160,10 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
 <template>
     <div class="min-h-screen bg-surface-canvas text-text-primary">
         <!-- Mobile top bar -->
-        <div class="md:hidden fixed top-0 inset-x-0 z-40 h-12 flex items-center justify-between px-4 bg-surface-base border-b border-border-subtle">
+        <div class="md:hidden fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-surface-base border-b border-border-subtle">
             <Link :href="route('dashboard')" class="flex flex-col justify-center">
-                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[22px] w-auto shrink-0" />
-                <span class="mt-0.5 text-[10px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
+                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[30px] w-auto shrink-0" />
+                <span class="mt-1 text-[11px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
             </Link>
             <button
                 @click="mobileOpen = !mobileOpen"
@@ -179,7 +179,7 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
         <div
             v-show="mobileOpen"
             @click="mobileOpen = false"
-            class="md:hidden fixed inset-0 z-40 bg-black/40 mt-12"
+            class="md:hidden fixed inset-0 z-40 bg-black/40 mt-14"
             aria-hidden="true"
         />
 
@@ -190,18 +190,18 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
                 'bg-surface-base border-r border-border-subtle',
                 'transform transition-transform duration-200',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-                'pt-12 md:pt-0',
+                'pt-14 md:pt-0',
             ]"
         >
             <!-- Workspace badge -->
-            <div class="px-3 h-16 flex items-center border-b border-border-subtle shrink-0">
+            <div class="px-3 h-20 flex items-center border-b border-border-subtle shrink-0">
                 <Link
                     :href="route('dashboard')"
                     class="flex items-center gap-2 w-full px-2 py-2 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
                 >
                     <div class="flex flex-col justify-center min-w-0">
-                        <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[26px] w-auto shrink-0" />
-                        <span class="mt-1 text-[11px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
+                        <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-[38px] w-auto shrink-0" />
+                        <span class="mt-1 text-[12px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
                     </div>
                     <span class="flex-1"></span>
                     <PackageSearch :size="14" class="text-text-tertiary shrink-0" />
@@ -284,7 +284,7 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
         </aside>
 
         <!-- Main column -->
-        <div class="md:pl-60 pt-12 md:pt-0">
+        <div class="md:pl-60 pt-14 md:pt-0">
             <!-- Top strip — sticky, thin -->
             <div class="sticky top-0 z-30 h-11 flex items-center justify-between gap-3 px-4 md:px-6 bg-surface-canvas/80 backdrop-blur border-b border-border-subtle">
                 <div class="flex-1 min-w-0">
