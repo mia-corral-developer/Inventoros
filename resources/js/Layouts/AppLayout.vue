@@ -161,8 +161,9 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
     <div class="min-h-screen bg-surface-canvas text-text-primary">
         <!-- Mobile top bar -->
         <div class="md:hidden fixed top-0 inset-x-0 z-40 h-12 flex items-center justify-between px-4 bg-surface-base border-b border-border-subtle">
-            <Link :href="route('dashboard')" class="flex items-center gap-2">
-                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-6 w-auto shrink-0" />
+            <Link :href="route('dashboard')" class="flex flex-col justify-center">
+                <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-5 w-auto shrink-0" />
+                <span class="mt-0.5 text-[9px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
             </Link>
             <button
                 @click="mobileOpen = !mobileOpen"
@@ -193,14 +194,17 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
             ]"
         >
             <!-- Workspace badge -->
-            <div class="px-3 h-14 flex items-center border-b border-border-subtle shrink-0">
+            <div class="px-3 h-16 flex items-center border-b border-border-subtle shrink-0">
                 <Link
                     :href="route('dashboard')"
-                    class="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
+                    class="flex items-center gap-2 w-full px-2 py-2 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
                 >
-                    <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-7 w-auto shrink-0" />
+                    <div class="flex flex-col justify-center min-w-0">
+                        <img src="/images/brand/zellia_logo_transparent.png" alt="Zellia" class="h-6 w-auto shrink-0" />
+                        <span class="mt-1 text-[10px] leading-none tracking-wide text-text-tertiary">Inventarios</span>
+                    </div>
                     <span class="flex-1"></span>
-                    <PackageSearch :size="14" class="text-text-tertiary" />
+                    <PackageSearch :size="14" class="text-text-tertiary shrink-0" />
                 </Link>
             </div>
 
