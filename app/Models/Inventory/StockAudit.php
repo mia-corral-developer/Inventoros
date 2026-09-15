@@ -22,6 +22,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $description
  * @property string $status
  * @property string $audit_type
+ * @property int $rounds_total
+ * @property bool $blind_count
+ * @property int $current_round
  * @property int|null $warehouse_location_id
  * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $completed_at
@@ -34,6 +37,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Inventory\ProductLocation|null $warehouseLocation
  * @property-read \App\Models\User $creator
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Inventory\StockAuditItem[] $items
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Inventory\StockAuditRound[] $rounds
  */
 class StockAudit extends Model
 {
@@ -46,6 +50,9 @@ class StockAudit extends Model
         'description',
         'status',
         'audit_type',
+        'rounds_total',
+        'blind_count',
+        'current_round',
         'warehouse_location_id',
         'started_at',
         'completed_at',
@@ -58,6 +65,9 @@ class StockAudit extends Model
         return [
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'rounds_total' => 'integer',
+            'blind_count' => 'boolean',
+            'current_round' => 'integer',
         ];
     }
 
@@ -99,6 +109,34 @@ class StockAudit extends Model
     public function items(): HasMany
     {
         return $this->hasMany(StockAuditItem::class);
+    }
+
+    /**
+     * Get the counting rounds of this audit (C1, C2, tiebreak …).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Inventory\StockAuditRound, $this>
+     */
+    public function rounds(): HasMany
+    {
+        return $this->hasMany(StockAuditRound::class)->orderBy('round_number');
+    }
+
+    /**
+     * Get the raw per-round captures for this audit.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Inventory\StockAuditCount, $this>
+     */
+    public function counts(): HasMany
+    {
+        return $this->hasMany(StockAuditCount::class);
+    }
+
+    /**
+     * True when this audit uses more than one counting round.
+     */
+    public function isMultiRound(): bool
+    {
+        return $this->rounds_total > 1;
     }
 
     /**

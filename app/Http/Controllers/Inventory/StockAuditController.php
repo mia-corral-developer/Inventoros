@@ -12,6 +12,7 @@ use App\Models\Inventory\ProductLocation;
 use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockAudit;
 use App\Models\Inventory\StockAuditItem;
+use App\Services\StockAuditRoundService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -378,13 +379,42 @@ class StockAuditController extends Controller
 
                 $stockAudit->load('items.product');
 
+                // Multi-round audits: collapse the C1/C2/(C3) counts into a
+                // single resolved_quantity per item before reconciling. Legacy
+                // single-round audits skip this entirely (no round rows).
+                $roundService = app(StockAuditRoundService::class);
+                if ($stockAudit->isMultiRound()) {
+                    $roundService->resolve($stockAudit);
+                    // resolve() writes resolved_quantity on fresh rows; the
+                    // in-memory collection loaded above is stale, so re-read it
+                    // or every item would look uncounted and be skipped.
+                    $stockAudit->load('items.product');
+
+                    // Fail closed: an item whose rounds disagree and has no
+                    // tiebreak agreement must be resolved before the audit can
+                    // be completed. Completing silently would skip its stock
+                    // adjustment — exactly the shrinkage the multi-count exists
+                    // to catch.
+                    $divergent = $stockAudit->items
+                        ->where('status', StockAuditRoundService::ITEM_DIVERGENT)
+                        ->count();
+
+                    if ($divergent > 0) {
+                        throw new \RuntimeException(
+                            "Cannot complete: {$divergent} item(s) still have unresolved counts. ".
+                            'Run the tiebreak round or resolve them manually first.'
+                        );
+                    }
+                }
+
                 foreach ($stockAudit->items as $item) {
-                    // Skip items that haven't been counted
-                    if ($item->counted_quantity === null) {
+                    // Skip items that haven't been counted (resolved wins when set)
+                    $final = $roundService->finalQuantity($item);
+                    if ($final === null) {
                         continue;
                     }
 
-                    $discrepancy = $item->counted_quantity - $item->system_quantity;
+                    $discrepancy = $final - $item->system_quantity;
 
                     // Update the discrepancy field
                     $item->update([
@@ -399,7 +429,7 @@ class StockAuditController extends Controller
                             quantity: $discrepancy,
                             type: 'recount',
                             reason: "Stock audit: {$stockAudit->audit_number}",
-                            notes: "Audit '{$stockAudit->name}' - System: {$item->system_quantity}, Counted: {$item->counted_quantity}",
+                            notes: "Audit '{$stockAudit->name}' - System: {$item->system_quantity}, Counted: {$final}",
                             reference: $stockAudit,
                         );
 

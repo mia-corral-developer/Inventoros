@@ -7,6 +7,7 @@ namespace App\Models\Inventory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Represents an individual item line in a stock audit.
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $location_id
  * @property int $system_quantity
  * @property int|null $counted_quantity
+ * @property int|null $resolved_quantity
+ * @property string|null $resolution_method
  * @property int $discrepancy
  * @property string $status
  * @property int|null $counted_by
@@ -30,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Inventory\ProductVariant|null $variant
  * @property-read \App\Models\Inventory\ProductLocation|null $location
  * @property-read \App\Models\User|null $countedByUser
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Inventory\StockAuditCount[] $counts
  */
 class StockAuditItem extends Model
 {
@@ -40,6 +44,8 @@ class StockAuditItem extends Model
         'location_id',
         'system_quantity',
         'counted_quantity',
+        'resolved_quantity',
+        'resolution_method',
         'discrepancy',
         'status',
         'counted_by',
@@ -52,6 +58,7 @@ class StockAuditItem extends Model
         return [
             'system_quantity' => 'integer',
             'counted_quantity' => 'integer',
+            'resolved_quantity' => 'integer',
             'discrepancy' => 'integer',
             'counted_at' => 'datetime',
         ];
@@ -105,5 +112,15 @@ class StockAuditItem extends Model
     public function countedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'counted_by');
+    }
+
+    /**
+     * Get the raw per-round captures for this item.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Inventory\StockAuditCount, $this>
+     */
+    public function counts(): HasMany
+    {
+        return $this->hasMany(StockAuditCount::class, 'stock_audit_item_id');
     }
 }
