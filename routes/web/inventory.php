@@ -114,6 +114,13 @@ Route::post('/stock-audits/{stockAudit}/items/{item}/count', [StockAuditControll
 Route::post('/stock-audits/{stockAudit}/tiebreak', [StockAuditController::class, 'openTiebreak'])->name('stock-audits.tiebreak')->middleware('permission:manage_stock_audits');
 Route::post('/stock-audits/{stockAudit}/items/{item}/resolve', [StockAuditController::class, 'resolveItem'])->name('stock-audits.items.resolve')->middleware('permission:manage_stock_audits');
 
+// Multi-round mobile capture (Phase 4). A counter only needs count_stock_audits;
+// reopening a round stays admin-only.
+Route::get('/stock-audits/{stockAudit}/capture', [StockAuditController::class, 'capture'])->name('stock-audits.capture')->middleware('permission:count_stock_audits');
+Route::post('/stock-audits/{stockAudit}/rounds/{round}/count', [StockAuditController::class, 'recordRoundCount'])->name('stock-audits.rounds.count')->middleware('permission:count_stock_audits');
+Route::post('/stock-audits/{stockAudit}/rounds/{round}/close', [StockAuditController::class, 'closeRound'])->name('stock-audits.rounds.close')->middleware('permission:count_stock_audits');
+Route::post('/stock-audits/{stockAudit}/rounds/{round}/reopen', [StockAuditController::class, 'reopenRound'])->name('stock-audits.rounds.reopen')->middleware('permission:manage_stock_audits');
+
 // Stock Adjustments - Permission based
 Route::get('/stock-adjustments', [StockAdjustmentController::class, 'index'])->name('stock-adjustments.index')->middleware('permission:manage_stock');
 Route::get('/stock-adjustments/create', [StockAdjustmentController::class, 'create'])->name('stock-adjustments.create')->middleware('permission:manage_stock');

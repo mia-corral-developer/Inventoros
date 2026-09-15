@@ -40,41 +40,46 @@ const resolvingItemId = ref(null);
 const resolveValue = ref(0);
 const tiebreakProcessing = ref(false);
 
-const isMultiRound = computed(() => (props.audit.rounds_total || 1) > 1);
-const roundColumns = computed(() => (props.rounds || []).map((r) => r.round_number));
-const hasTiebreak = computed(() => (props.rounds || []).some((r) => r.is_tiebreak));
-const divergentCount = computed(() => (props.variance || []).filter((v) => v.divergent).length);
-const unresolvedCount = computed(
-    () => (props.variance || []).filter((v) => v.divergent || v.resolved_quantity === null).length
+const isMultiRound = computed(() => (props.audit?.rounds_total || 1) > 1);
+
+const divergentCount = computed(
+    () => props.variance?.filter((r) => r.divergent).length || 0
 );
+const unresolvedCount = computed(() => props.summary?.divergent_items || 0);
+const hasTiebreak = computed(() => (props.rounds || []).some((r) => r.is_tiebreak));
+
+const roundColumns = computed(() => (props.rounds || []).map((r) => r.round_number));
 
 const colHeader = (n) => {
-    const r = (props.rounds || []).find((x) => x.round_number === n);
-    return r ? r.label : `C${n}`;
+    const round = (props.rounds || []).find((r) => r.round_number === n);
+    return round ? round.label : `C${n}`;
 };
 
-// A round value is "off" when it disagrees with the resolved number, or — if
-// nothing is resolved yet — when the rounds disagree among themselves.
-const isRoundValueDivergent = (row, val) => {
-    if (val === null) return false;
-    if (row.resolved_quantity !== null) return val !== row.resolved_quantity;
-    const distinct = [...new Set(Object.values(row.rounds).filter((v) => v !== null))];
-    return distinct.length > 1;
+// A round value is "divergent" if the regular rounds disagree on this item
+// (not just because it differs from the system quantity).
+const isRoundValueDivergent = (row, value) => {
+    if (value === null || value === undefined) return false;
+    const regular = (props.rounds || [])
+        .filter((r) => !r.is_tiebreak)
+        .map((r) => row.rounds[r.round_number])
+        .filter((v) => v !== null && v !== undefined);
+    return new Set(regular).size > 1;
 };
 
 const methodLabel = (method) =>
-    ({ agreement: 'Agreement', tiebreak: 'Tiebreak', manual: 'Manual' }[method] || '-');
+    ({ agreement: 'Agreement', tiebreak: 'Tiebreak', manual: 'Manual' }[method] || 'Pending');
 
 const methodVariant = (method) =>
     ({ agreement: 'success', tiebreak: 'info', manual: 'brand' }[method] || 'neutral');
 
 const startResolve = (row) => {
     resolvingItemId.value = row.item_id;
-    resolveValue.value = row.system_quantity;
+    resolveValue.value = row.resolved_quantity ?? row.system_quantity;
 };
 
 const cancelResolve = () => {
     resolvingItemId.value = null;
+    resolveValue.value = 0;
 };
 
 const saveResolve = async (row) => {
@@ -91,7 +96,6 @@ const saveResolve = async (row) => {
                 body: JSON.stringify({ resolved_quantity: parseInt(resolveValue.value) }),
             }
         );
-
         if (response.ok) {
             resolvingItemId.value = null;
             router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] });
@@ -99,34 +103,22 @@ const saveResolve = async (row) => {
             const data = await response.json();
             alert(data.message || 'Failed to resolve item');
         }
-    } catch (error) {
+    } catch (e) {
         alert('An error occurred while resolving the item');
     }
 };
 
-const openTiebreak = async () => {
+const openTiebreak = () => {
+    if (!confirm('Open the tiebreak round (C3) for this audit?')) return;
     tiebreakProcessing.value = true;
-    try {
-        const response = await fetch(route('stock-audits.tiebreak', props.audit.id), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-            },
-        });
-
-        if (response.ok) {
-            router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] });
-        } else {
-            const data = await response.json();
-            alert(data.message || 'Failed to open the tiebreak round');
+    router.post(
+        route('stock-audits.tiebreak', props.audit.id),
+        {},
+        {
+            onFinish: () => { tiebreakProcessing.value = false; },
+            onSuccess: () => router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] }),
         }
-    } catch (error) {
-        alert('An error occurred while opening the tiebreak round');
-    } finally {
-        tiebreakProcessing.value = false;
-    }
+    );
 };
 
 const statusVariant = (status) =>
@@ -301,6 +293,16 @@ const thClass = 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wide
                 >
                     <Pencil :size="14" />
                     Edit
+                </Button>
+                <Button
+                    v-if="isMultiRound && audit.status === 'in_progress'"
+                    variant="default"
+                    size="sm"
+                    as="Link"
+                    :href="route('stock-audits.capture', audit.id)"
+                >
+                    <ListChecks :size="14" />
+                    Count
                 </Button>
                 <Button variant="secondary" size="sm" as="Link" :href="route('stock-audits.index')">
                     <ArrowLeft :size="14" />

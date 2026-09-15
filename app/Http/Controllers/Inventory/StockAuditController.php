@@ -11,6 +11,7 @@ use App\Models\Inventory\Product;
 use App\Models\Inventory\ProductLocation;
 use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockAudit;
+use App\Models\Inventory\StockAuditCount;
 use App\Models\Inventory\StockAuditItem;
 use App\Models\User;
 use App\Services\StockAuditRoundService;
@@ -662,5 +663,195 @@ class StockAuditController extends Controller
             'message' => 'Item resolved.',
             'item' => $item->fresh(['product']),
         ]);
+    }
+
+    /**
+     * Mobile capture screen for a counter (Phase 4).
+     *
+     * Shows ONLY the rounds this user may count and only THEIR OWN previous
+     * counts for the active round — never another counter's numbers, so the
+     * blind count actually stays blind.
+     */
+    public function capture(Request $request, StockAudit $stockAudit): Response|RedirectResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (! $stockAudit->isMultiRound()) {
+            return redirect()->route('stock-audits.show', $stockAudit)
+                ->with('error', 'This audit is a single count — use the main screen.');
+        }
+
+        if ($stockAudit->status !== 'in_progress') {
+            return redirect()->route('stock-audits.show', $stockAudit)
+                ->with('error', 'Only in-progress audits can be counted.');
+        }
+
+        $user = $request->user();
+        $audit = $stockAudit->load(['rounds.assignee']);
+        $rounds = $audit->rounds;
+
+        if ($rounds->isEmpty()) {
+            return redirect()->route('stock-audits.show', $audit)
+                ->with('error', 'No counting rounds configured for this audit.');
+        }
+
+        // Pick the active round: explicit ?round=, else the user's own open
+        // round, else the audit's current round, else the first open one.
+        $requested = (int) $request->query('round', 0);
+        $active = $requested ? $rounds->firstWhere('round_number', $requested) : null;
+        $active ??= $rounds->first(fn ($r) => $r->status === 'open' && $r->assigned_to === $user->id);
+        $active ??= $rounds->firstWhere('round_number', $audit->current_round);
+        $active ??= $rounds->firstWhere('status', 'open');
+        $active ??= $rounds->first();
+
+        // The counter's own captures for the active round.
+        $myCounts = StockAuditCount::where('stock_audit_id', $audit->id)
+            ->where('round_number', $active->round_number)
+            ->where('counted_by', $user->id)
+            ->get()
+            ->keyBy('stock_audit_item_id');
+
+        $blind = (bool) $audit->blind_count;
+
+        $items = $audit->items()->with(['product', 'location'])->get()->map(function ($item) use ($myCounts) {
+            $count = $myCounts->get($item->id);
+
+            return [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'name' => $item->product?->name,
+                'sku' => $item->product?->sku,
+                'barcode' => $item->product?->barcode,
+                'location' => $item->location?->name,
+                'my_count' => $count ? (int) $count->counted_quantity : null,
+                'counted_at' => optional($count)->counted_at,
+            ];
+        })->values();
+
+        $isAdmin = $user->hasAnyPermission([\App\Enums\Permission::MANAGE_STOCK_AUDITS->value]);
+
+        return Inertia::render('StockAudits/Capture', [
+            'audit' => [
+                'id' => $audit->id,
+                'audit_number' => $audit->audit_number,
+                'name' => $audit->name,
+                'blind_count' => $audit->blind_count,
+                'rounds_total' => $audit->rounds_total,
+                'status' => $audit->status,
+            ],
+            'rounds' => $rounds->map(fn ($r) => [
+                'round_number' => $r->round_number,
+                'label' => $r->label,
+                'is_tiebreak' => $r->is_tiebreak,
+                'status' => $r->status,
+                'assigned_to' => $r->assigned_to,
+                'assignee_name' => $r->assignee?->name,
+                'is_mine' => (int) $r->assigned_to === (int) $user->id,
+            ])->values(),
+            'activeRound' => [
+                'round_number' => $active->round_number,
+                'label' => $active->label,
+                'is_tiebreak' => $active->is_tiebreak,
+                'status' => $active->status,
+            ],
+            'items' => $items,
+            'blind' => $blind,
+            'isAdmin' => $isAdmin,
+        ]);
+    }
+
+    /**
+     * Record a count for one item in one round (mobile capture, JSON).
+     */
+    public function recordRoundCount(Request $request, StockAudit $stockAudit, int $round): JsonResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($stockAudit->status !== 'in_progress') {
+            return response()->json(['message' => 'The audit is not in progress.'], 422);
+        }
+
+        $validated = $request->validate([
+            'item_id' => 'required|integer',
+            'counted_quantity' => 'required|integer|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $item = StockAuditItem::where('stock_audit_id', $stockAudit->id)
+            ->whereKey($validated['item_id'])
+            ->first();
+
+        if (! $item) {
+            return response()->json(['message' => 'Item does not belong to this audit'], 422);
+        }
+
+        $isAdmin = $request->user()->hasAnyPermission([\App\Enums\Permission::MANAGE_STOCK_AUDITS->value]);
+
+        try {
+            $count = app(StockAuditRoundService::class)->recordCount(
+                $stockAudit,
+                $item,
+                $round,
+                (int) $validated['counted_quantity'],
+                $request->user(),
+                $validated['notes'] ?? null,
+                $isAdmin,
+            );
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Count saved.',
+            'count' => [
+                'round_number' => $count->round_number,
+                'counted_quantity' => (int) $count->counted_quantity,
+            ],
+        ]);
+    }
+
+    /**
+     * Close a round. The assigned counter may close their own round; an admin
+     * may close any (JSON).
+     */
+    public function closeRound(Request $request, StockAudit $stockAudit, int $round): JsonResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $isAdmin = $request->user()->hasAnyPermission([\App\Enums\Permission::MANAGE_STOCK_AUDITS->value]);
+
+        try {
+            $roundRow = app(StockAuditRoundService::class)->closeRound($stockAudit, $round, $request->user(), $isAdmin);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => "Round {$roundRow->label} closed."]);
+    }
+
+    /**
+     * Reopen a closed round (admin only; JSON).
+     */
+    public function reopenRound(Request $request, StockAudit $stockAudit, int $round): JsonResponse
+    {
+        if ($stockAudit->organization_id !== $request->user()->organization_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $isAdmin = $request->user()->hasAnyPermission([\App\Enums\Permission::MANAGE_STOCK_AUDITS->value]);
+
+        try {
+            $roundRow = app(StockAuditRoundService::class)->reopenRound($stockAudit, $round, $request->user(), $isAdmin);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => "Round {$roundRow->label} reopened."]);
     }
 }
