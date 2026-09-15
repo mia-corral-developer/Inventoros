@@ -1128,10 +1128,10 @@
   },
   "install": {
     "welcome": {
-      "title": "Inventorosへようこそ",
+      "title": "Zelliaへようこそ",
       "subtitle": "みんなのための在庫管理",
       "wizard": "インストールウィザード",
-      "description": "Inventorosをお選びいただきありがとうございます！このインストールウィザードがセットアップ手順をご案内します。",
+      "description": "Zelliaをお選びいただきありがとうございます！このインストールウィザードがセットアップ手順をご案内します。",
       "includes": "インストール手順の内容",
       "step1": "システム要件チェック",
       "step1Desc": "サーバーがすべての要件を満たしているか確認",
@@ -1140,7 +1140,7 @@
       "step3": "管理者アカウント作成",
       "step3Desc": "組織と管理者ユーザーの作成",
       "step4": "セットアップ完了",
-      "step4Desc": "インストールを完了してInventorosの使用を開始",
+      "step4Desc": "インストールを完了してZelliaの使用を開始",
       "beforeBegin": "開始する前に",
       "beforeBeginDesc": "PHP 8.2以上、MySQL/PostgreSQL、および必要なPHP拡張機能がインストールされていることを確認してください。",
       "startInstallation": "インストールを開始",
@@ -1150,7 +1150,7 @@
       "title": "システム要件",
       "subtitle": "サーバー構成を確認中",
       "allMet": "すべての要件を満たしています！",
-      "allMetDesc": "お使いのサーバーはInventorosを実行するためのすべての要件を満たしています。",
+      "allMetDesc": "お使いのサーバーはZelliaを実行するためのすべての要件を満たしています。",
       "notMet": "一部の要件が満たされていません",
       "notMetDesc": "続行する前に、以下の問題を修正してください。",
       "current": "現在",
@@ -1185,13 +1185,13 @@
       "passwordHint": "8文字以上",
       "confirmPassword": "パスワード確認",
       "confirmPasswordHint": "パスワードを確認してください",
-      "accessNote": "この管理者アカウントはInventorosインストール全体へのフルアクセスを持ちます。",
+      "accessNote": "この管理者アカウントはZelliaインストール全体へのフルアクセスを持ちます。",
       "completeInstallation": "インストールを完了",
       "creatingAccount": "アカウントを作成中..."
     },
     "complete": {
       "title": "インストール完了！",
-      "description": "Inventorosは正常にインストールおよび設定されました。",
+      "description": "Zelliaは正常にインストールおよび設定されました。",
       "whatsNext": "次のステップ",
       "step1": "管理者アカウントでログイン",
       "step2": "商品カテゴリとロケーションを設定",
@@ -1202,7 +1202,7 @@
       "community": "コミュニティディスカッション",
       "issues": "問題を報告",
       "goToLogin": "ログインへ",
-      "thankYou": "Inventorosをお選びいただきありがとうございます！"
+      "thankYou": "Zelliaをお選びいただきありがとうございます！"
     }
   },
   "errors": {

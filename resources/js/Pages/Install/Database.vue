@@ -202,7 +202,7 @@ const install = async () => {
                             type="text"
                             required
                             class="w-full px-4 py-2 border border-border-subtle rounded-lg bg-surface-canvas text-text-primary placeholder:text-text-tertiary focus:ring-2 focus:ring-brand focus:border-transparent"
-                            placeholder="inventoros"
+                            placeholder="zellia"
                         />
                     </div>
 

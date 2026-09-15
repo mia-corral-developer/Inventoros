@@ -47,10 +47,10 @@ return [
     | Uploading a plugin is RCE-by-design (see above). Beyond the off-by-default
     | flag, an operator can require uploaded plugins to carry a detached Ed25519
     | signature verified against a trusted public key — so only plugins signed
-    | by a key the operator controls (or an Inventoros-published registry key)
+    | by a key the operator controls (or an Zellia-published registry key)
     | can be installed, even by a compromised admin session.
     |
-    | This is OFF by default: there is no public Inventoros plugin registry yet,
+    | This is OFF by default: there is no public Zellia plugin registry yet,
     | and requiring signatures unconditionally would make the (already opt-in)
     | upload feature unusable for local plugin development. When `required` is
     | on it FAILS CLOSED — uploads without a valid signature are rejected. The

@@ -30,9 +30,9 @@ return [
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
         'description' => <<<'MARKDOWN'
-## Inventoros REST API
+## Zellia REST API
 
-Inventoros provides a RESTful API for managing inventory, orders, suppliers, and warehouse operations.
+Zellia provides a RESTful API for managing inventory, orders, suppliers, and warehouse operations.
 
 ### Authentication
 

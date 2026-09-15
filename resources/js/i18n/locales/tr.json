@@ -1128,10 +1128,10 @@
   },
   "install": {
     "welcome": {
-      "title": "Inventoros'a Hoş Geldiniz",
+      "title": "Zellia'a Hoş Geldiniz",
       "subtitle": "Herkes İçin Envanter Yönetimi",
       "wizard": "Kurulum Sihirbazı",
-      "description": "Inventoros'u tercih ettiğiniz için teşekkürler! Bu kurulum sihirbazı, yapılandırma sürecinde size rehberlik edecektir.",
+      "description": "Zellia'u tercih ettiğiniz için teşekkürler! Bu kurulum sihirbazı, yapılandırma sürecinde size rehberlik edecektir.",
       "includes": "Kurulum süreci şunları içerir",
       "step1": "Sistem Gereksinimleri Kontrolü",
       "step1Desc": "Sunucunuzun tüm gereksinimleri karşıladığını doğrulayın",
@@ -1140,7 +1140,7 @@
       "step3": "Yönetici Hesabı Oluşturma",
       "step3Desc": "Organizasyonunuzu ve yönetici kullanıcınızı oluşturun",
       "step4": "Kurulumu Tamamla",
-      "step4Desc": "Kurulumu sonlandırın ve Inventoros'u kullanmaya başlayın",
+      "step4Desc": "Kurulumu sonlandırın ve Zellia'u kullanmaya başlayın",
       "beforeBegin": "Başlamadan önce",
       "beforeBeginDesc": "PHP 8.2+, MySQL/PostgreSQL ve gerekli PHP uzantılarının yüklü olduğundan emin olun.",
       "startInstallation": "Kurulumu Başlat",
@@ -1150,7 +1150,7 @@
       "title": "Sistem Gereksinimleri",
       "subtitle": "Sunucu yapılandırmanız kontrol ediliyor",
       "allMet": "Tüm gereksinimler karşılandı!",
-      "allMetDesc": "Sunucunuz Inventoros'u çalıştırmak için tüm gereksinimleri karşılıyor.",
+      "allMetDesc": "Sunucunuz Zellia'u çalıştırmak için tüm gereksinimleri karşılıyor.",
       "notMet": "Bazı gereksinimler karşılanmadı",
       "notMetDesc": "Devam etmeden önce lütfen aşağıdaki sorunları düzeltin.",
       "current": "Mevcut",
@@ -1185,13 +1185,13 @@
       "passwordHint": "En az 8 karakter",
       "confirmPassword": "Şifre Onayı",
       "confirmPasswordHint": "Şifrenizi onaylayın",
-      "accessNote": "Bu yönetici hesabı, Inventoros kurulumunuza tam erişime sahip olacaktır.",
+      "accessNote": "Bu yönetici hesabı, Zellia kurulumunuza tam erişime sahip olacaktır.",
       "completeInstallation": "Kurulumu Tamamla",
       "creatingAccount": "Hesap oluşturuluyor..."
     },
     "complete": {
       "title": "Kurulum Tamamlandı!",
-      "description": "Inventoros başarıyla kuruldu ve yapılandırıldı.",
+      "description": "Zellia başarıyla kuruldu ve yapılandırıldı.",
       "whatsNext": "Sırada Ne Var?",
       "step1": "Yönetici hesabınızla giriş yapın",
       "step2": "Ürün kategorilerinizi ve depolarınızı oluşturun",
@@ -1202,7 +1202,7 @@
       "community": "Topluluk Tartışmaları",
       "issues": "Sorun Bildirin",
       "goToLogin": "Giriş Sayfasına Git",
-      "thankYou": "Inventoros'u tercih ettiğiniz için teşekkürler!"
+      "thankYou": "Zellia'u tercih ettiğiniz için teşekkürler!"
     }
   },
   "errors": {

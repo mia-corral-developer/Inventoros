@@ -23,9 +23,9 @@ const logout = () => router.post(route('logout'));
             <div class="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4">
                 <Link :href="route('my-counts')" class="flex min-w-0 items-center gap-2">
                     <img
-                        src="/images/brand/inventoros_icon_transparent_512.png"
-                        alt="Inventoros"
-                        class="h-6 w-6 shrink-0"
+                        src="/images/brand/zellia_logo_transparent.png"
+                        alt="Zellia"
+                        class="h-5 w-auto shrink-0"
                     />
                     <span class="truncate text-sm font-semibold tracking-tight">{{ title }}</span>
                 </Link>

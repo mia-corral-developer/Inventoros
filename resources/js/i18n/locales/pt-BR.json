@@ -1128,10 +1128,10 @@
   },
   "install": {
     "welcome": {
-      "title": "Bem-vindo ao Inventoros",
+      "title": "Bem-vindo ao Zellia",
       "subtitle": "Gerenciamento de Estoque para Todos",
       "wizard": "Assistente de Instalação",
-      "description": "Obrigado por escolher o Inventoros! Este assistente de instalação irá guiá-lo pelo processo de configuração.",
+      "description": "Obrigado por escolher o Zellia! Este assistente de instalação irá guiá-lo pelo processo de configuração.",
       "includes": "O processo de instalação inclui",
       "step1": "Verificação de Requisitos do Sistema",
       "step1Desc": "Verificar se seu servidor atende todos os requisitos",
@@ -1140,7 +1140,7 @@
       "step3": "Criação da Conta de Administrador",
       "step3Desc": "Criar sua organização e usuário administrador",
       "step4": "Concluir Configuração",
-      "step4Desc": "Finalizar a instalação e começar a usar o Inventoros",
+      "step4Desc": "Finalizar a instalação e começar a usar o Zellia",
       "beforeBegin": "Antes de começar",
       "beforeBeginDesc": "Certifique-se de ter PHP 8.2+, MySQL/PostgreSQL e as extensões PHP necessárias instaladas.",
       "startInstallation": "Iniciar Instalação",
@@ -1150,7 +1150,7 @@
       "title": "Requisitos do Sistema",
       "subtitle": "Verificando a configuração do seu servidor",
       "allMet": "Todos os requisitos atendidos!",
-      "allMetDesc": "Seu servidor atende todos os requisitos para executar o Inventoros.",
+      "allMetDesc": "Seu servidor atende todos os requisitos para executar o Zellia.",
       "notMet": "Alguns requisitos não foram atendidos",
       "notMetDesc": "Por favor, corrija os problemas abaixo antes de continuar.",
       "current": "Atual",
@@ -1185,13 +1185,13 @@
       "passwordHint": "No mínimo 8 caracteres",
       "confirmPassword": "Confirmar Senha",
       "confirmPasswordHint": "Confirme sua senha",
-      "accessNote": "Esta conta de administrador terá acesso total à sua instalação do Inventoros.",
+      "accessNote": "Esta conta de administrador terá acesso total à sua instalação do Zellia.",
       "completeInstallation": "Concluir Instalação",
       "creatingAccount": "Criando Conta..."
     },
     "complete": {
       "title": "Instalação Concluída!",
-      "description": "O Inventoros foi instalado e configurado com sucesso.",
+      "description": "O Zellia foi instalado e configurado com sucesso.",
       "whatsNext": "Próximos Passos",
       "step1": "Faça login com sua conta de administrador",
       "step2": "Configure suas categorias de produtos e localizações",
@@ -1202,7 +1202,7 @@
       "community": "Discussões da Comunidade",
       "issues": "Reportar Problemas",
       "goToLogin": "Ir para o Login",
-      "thankYou": "Obrigado por escolher o Inventoros!"
+      "thankYou": "Obrigado por escolher o Zellia!"
     }
   },
   "errors": {

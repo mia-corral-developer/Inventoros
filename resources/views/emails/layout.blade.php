@@ -15,7 +15,7 @@
                     <tr>
                         <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
                             <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">
-                                {{ config('app.name', 'Inventoros') }}
+                                {{ config('app.name', 'Zellia') }}
                             </h1>
                         </td>
                     </tr>
@@ -56,7 +56,7 @@
                 <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; width: 100%; margin-top: 20px;">
                     <tr>
                         <td style="text-align: center; color: #9ca3af; font-size: 12px;">
-                            © {{ date('Y') }} Inventoros. All rights reserved.
+                            © {{ date('Y') }} Zellia. All rights reserved.
                         </td>
                     </tr>
                 </table>

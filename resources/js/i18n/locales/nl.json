@@ -1128,10 +1128,10 @@
   },
   "install": {
     "welcome": {
-      "title": "Welkom bij Inventoros",
+      "title": "Welkom bij Zellia",
       "subtitle": "Voorraadbeheer voor iedereen",
       "wizard": "Installatiewizard",
-      "description": "Bedankt voor het kiezen van Inventoros! Deze installatiewizard begeleidt u door het installatieproces.",
+      "description": "Bedankt voor het kiezen van Zellia! Deze installatiewizard begeleidt u door het installatieproces.",
       "includes": "Het installatieproces omvat",
       "step1": "Systeemvereisten controleren",
       "step1Desc": "Controleren of uw server aan alle vereisten voldoet",
@@ -1140,7 +1140,7 @@
       "step3": "Beheerdersaccount aanmaken",
       "step3Desc": "Uw organisatie en beheerdersgebruiker aanmaken",
       "step4": "Installatie voltooien",
-      "step4Desc": "Installatie afronden en beginnen met Inventoros",
+      "step4Desc": "Installatie afronden en beginnen met Zellia",
       "beforeBegin": "Voordat u begint",
       "beforeBeginDesc": "Zorg ervoor dat PHP 8.2+, MySQL/PostgreSQL en de vereiste PHP-extensies zijn geïnstalleerd.",
       "startInstallation": "Installatie starten",
@@ -1150,7 +1150,7 @@
       "title": "Systeemvereisten",
       "subtitle": "Uw serverconfiguratie controleren",
       "allMet": "Aan alle vereisten voldaan!",
-      "allMetDesc": "Uw server voldoet aan alle vereisten om Inventoros uit te voeren.",
+      "allMetDesc": "Uw server voldoet aan alle vereisten om Zellia uit te voeren.",
       "notMet": "Niet aan alle vereisten voldaan",
       "notMetDesc": "Los onderstaande problemen op voordat u verdergaat.",
       "current": "Huidig",
@@ -1185,13 +1185,13 @@
       "passwordHint": "Minimaal 8 tekens",
       "confirmPassword": "Wachtwoord bevestigen",
       "confirmPasswordHint": "Bevestig uw wachtwoord",
-      "accessNote": "Dit beheerdersaccount heeft volledige toegang tot uw Inventoros-installatie.",
+      "accessNote": "Dit beheerdersaccount heeft volledige toegang tot uw Zellia-installatie.",
       "completeInstallation": "Installatie voltooien",
       "creatingAccount": "Account aanmaken..."
     },
     "complete": {
       "title": "Installatie voltooid!",
-      "description": "Inventoros is succesvol geïnstalleerd en geconfigureerd.",
+      "description": "Zellia is succesvol geïnstalleerd en geconfigureerd.",
       "whatsNext": "Wat nu?",
       "step1": "Log in met uw beheerdersaccount",
       "step2": "Stel uw productcategorieën en locaties in",
@@ -1202,7 +1202,7 @@
       "community": "Communitydiscussies",
       "issues": "Problemen melden",
       "goToLogin": "Naar inloggen",
-      "thankYou": "Bedankt voor het kiezen van Inventoros!"
+      "thankYou": "Bedankt voor het kiezen van Zellia!"
     }
   },
   "errors": {

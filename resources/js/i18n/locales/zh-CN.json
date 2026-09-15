@@ -1128,10 +1128,10 @@
   },
   "install": {
     "welcome": {
-      "title": "欢迎使用 Inventoros",
+      "title": "欢迎使用 Zellia",
       "subtitle": "人人适用的库存管理系统",
       "wizard": "安装向导",
-      "description": "感谢您选择 Inventoros！本安装向导将引导您完成设置过程。",
+      "description": "感谢您选择 Zellia！本安装向导将引导您完成设置过程。",
       "includes": "安装过程包括",
       "step1": "系统要求检查",
       "step1Desc": "验证服务器是否满足所有要求",
@@ -1140,7 +1140,7 @@
       "step3": "管理员账户创建",
       "step3Desc": "创建组织和管理员用户",
       "step4": "完成设置",
-      "step4Desc": "完成安装并开始使用 Inventoros",
+      "step4Desc": "完成安装并开始使用 Zellia",
       "beforeBegin": "开始之前",
       "beforeBeginDesc": "请确保已安装 PHP 8.2+、MySQL/PostgreSQL 及所需的 PHP 扩展。",
       "startInstallation": "开始安装",
@@ -1150,7 +1150,7 @@
       "title": "系统要求",
       "subtitle": "正在检查服务器配置",
       "allMet": "所有要求已满足！",
-      "allMetDesc": "您的服务器满足运行 Inventoros 的所有要求。",
+      "allMetDesc": "您的服务器满足运行 Zellia 的所有要求。",
       "notMet": "部分要求未满足",
       "notMetDesc": "请在继续之前修复以下问题。",
       "current": "当前",
@@ -1185,13 +1185,13 @@
       "passwordHint": "至少 8 个字符",
       "confirmPassword": "确认密码",
       "confirmPasswordHint": "请确认您的密码",
-      "accessNote": "此管理员账户将拥有 Inventoros 安装的完全访问权限。",
+      "accessNote": "此管理员账户将拥有 Zellia 安装的完全访问权限。",
       "completeInstallation": "完成安装",
       "creatingAccount": "正在创建账户..."
     },
     "complete": {
       "title": "安装完成！",
-      "description": "Inventoros 已成功安装和配置。",
+      "description": "Zellia 已成功安装和配置。",
       "whatsNext": "下一步",
       "step1": "使用管理员账户登录",
       "step2": "设置产品分类和仓库",
@@ -1202,7 +1202,7 @@
       "community": "社区讨论",
       "issues": "报告问题",
       "goToLogin": "前往登录",
-      "thankYou": "感谢您选择 Inventoros！"
+      "thankYou": "感谢您选择 Zellia！"
     }
   },
   "errors": {
