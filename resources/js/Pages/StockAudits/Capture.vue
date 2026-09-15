@@ -1,14 +1,13 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
-import PageHeader from '@/Components/ui/PageHeader.vue';
+import CounterLayout from '@/Layouts/CounterLayout.vue';
 import Card from '@/Components/ui/Card.vue';
 import Button from '@/Components/ui/Button.vue';
 import Badge from '@/Components/ui/Badge.vue';
 import BarcodeScannerModal from '@/Components/BarcodeScannerModal.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ArrowLeft, ScanLine, Save, Lock, Unlock, EyeOff, Search, CheckCircle2 } from 'lucide-vue-next';
+import { ArrowLeft, ScanLine, Save, Unlock, EyeOff, Search, CheckCircle2 } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -50,6 +49,17 @@ const progress = computed(() => (props.items.length ? Math.round((countedCount.v
 const activeIsOpen = computed(() => props.activeRound?.status === 'open');
 const activeIsMine = computed(() => (props.rounds || []).find((r) => r.round_number === props.activeRound?.round_number)?.is_mine);
 
+// Operators only see the rounds they may count; admins see every round.
+const visibleRounds = computed(() => {
+    const all = props.rounds || [];
+    if (props.isAdmin) return all;
+    const mine = all.filter((r) => r.is_mine);
+    return mine.length ? mine : all;
+});
+
+// Only the assigned counter (or an admin) may finish the round.
+const canFinish = computed(() => activeIsOpen.value && (props.isAdmin || activeIsMine.value));
+
 const switchRound = (n) => {
     router.get(route('stock-audits.capture', { stockAudit: props.audit.id, round: n }));
 };
@@ -87,12 +97,15 @@ const onProductFound = (product) => {
 };
 
 const closeRound = () => {
-    if (!confirm(`Close round ${props.activeRound.label}? Counts can still be reopened by an admin.`)) return;
+    if (!confirm(`¿Marcar la ronda ${props.activeRound.label} como terminada? Un admin aún puede reabrirla si hay que corregir.`)) return;
     processing.value = true;
     router.post(
         route('stock-audits.rounds.close', { stockAudit: props.audit.id, round: props.activeRound.round_number }),
         {},
-        { onFinish: () => { processing.value = false; }, onSuccess: () => router.reload() }
+        {
+            onFinish: () => { processing.value = false; },
+            onSuccess: () => router.visit(route('my-counts')),
+        }
     );
 };
 
@@ -109,33 +122,31 @@ const reopenRound = () => {
 <template>
     <Head :title="`Count ${audit.audit_number}`" />
 
-    <AppLayout>
-        <template #header>
-            <div class="flex items-center gap-2 text-xs">
-                <Link :href="route('stock-audits.show', audit.id)" class="text-text-tertiary hover:text-text-primary">Audit</Link>
-                <span class="text-text-tertiary">/</span>
-                <span class="font-medium text-text-primary">Count</span>
+    <CounterLayout :title="`Ronda ${activeRound.label}`">
+        <div class="mb-4 flex items-start justify-between gap-2">
+            <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-text-primary">
+                    {{ audit.audit_number }} — {{ audit.name }}
+                </div>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
+                    <span>Ronda {{ activeRound.label }}</span>
+                    <Badge v-if="blind" variant="info" size="sm">
+                        <EyeOff :size="11" class="mr-1" /> Ciego
+                    </Badge>
+                    <Badge :variant="activeIsOpen ? 'success' : 'neutral'" size="sm" dot>
+                        {{ activeIsOpen ? 'Abierta' : 'Cerrada' }}
+                    </Badge>
+                </div>
             </div>
-        </template>
+            <Button v-if="isAdmin" variant="secondary" size="sm" as="Link" :href="route('stock-audits.show', audit.id)">
+                <ArrowLeft :size="14" /> Admin
+            </Button>
+        </div>
 
-        <PageHeader :title="`Round ${activeRound.label}`" :description="`${audit.audit_number} — ${audit.name}`">
-            <template #actions>
-                <Badge v-if="blind" variant="info" size="sm">
-                    <EyeOff :size="12" class="mr-1" /> Blind
-                </Badge>
-                <Badge :variant="activeIsOpen ? 'success' : 'neutral'" size="sm" dot>
-                    {{ activeIsOpen ? 'Open' : 'Closed' }}
-                </Badge>
-                <Button variant="secondary" size="sm" as="Link" :href="route('stock-audits.show', audit.id)">
-                    <ArrowLeft :size="14" /> Back
-                </Button>
-            </template>
-        </PageHeader>
-
-        <!-- Round switcher -->
-        <div class="mt-6 flex flex-wrap gap-2">
+        <!-- Round switcher (only the operator's own rounds) -->
+        <div v-if="visibleRounds.length > 1" class="mt-4 flex flex-wrap gap-2">
             <button
-                v-for="r in rounds"
+                v-for="r in visibleRounds"
                 :key="r.round_number"
                 @click="switchRound(r.round_number)"
                 class="rounded-lg border px-3 py-1.5 text-sm transition-colors ds-focus-ring"
@@ -144,14 +155,14 @@ const reopenRound = () => {
                     : 'border-border-subtle bg-surface-raised text-text-secondary hover:border-border-strong'"
             >
                 {{ r.label }}
-                <span v-if="r.is_tiebreak" class="ml-1 text-xs">(tiebreak)</span>
+                <span v-if="r.is_tiebreak" class="ml-1 text-xs">(desempate)</span>
             </button>
         </div>
 
         <!-- Progress -->
         <div class="mt-4 rounded-lg border border-border-subtle bg-surface-raised p-4">
             <div class="flex items-center justify-between text-sm">
-                <span class="text-text-secondary">Counted by me</span>
+                <span class="text-text-secondary">Contados por mí</span>
                 <span class="font-semibold tabular-nums text-text-primary">{{ countedCount }} / {{ items.length }}</span>
             </div>
             <div class="mt-2 h-2 w-full rounded-full bg-surface-sunken">
@@ -166,18 +177,15 @@ const reopenRound = () => {
                 <input
                     v-model="search"
                     type="search"
-                    placeholder="Search by name, SKU or barcode…"
+                    placeholder="Buscar por nombre, SKU o código…"
                     class="h-10 w-full rounded-lg border border-border-subtle bg-surface-canvas pl-9 pr-3 text-sm text-text-primary ds-focus-ring"
                 />
             </div>
             <Button variant="secondary" size="sm" @click="scanning = true">
-                <ScanLine :size="16" /> Scan
+                <ScanLine :size="16" /> Escanear
             </Button>
-            <Button v-if="activeIsOpen" variant="secondary" size="sm" :loading="processing" :disabled="processing" @click="closeRound">
-                <Lock :size="14" /> Close round
-            </Button>
-            <Button v-else-if="isAdmin" variant="secondary" size="sm" :loading="processing" :disabled="processing" @click="reopenRound">
-                <Unlock :size="14" /> Reopen
+            <Button v-if="!activeIsOpen && isAdmin" variant="secondary" size="sm" :loading="processing" :disabled="processing" @click="reopenRound">
+                <Unlock :size="14" /> Reabrir
             </Button>
         </div>
 
@@ -223,9 +231,29 @@ const reopenRound = () => {
         </Card>
 
         <p v-if="!activeIsOpen" class="mt-3 text-xs text-text-tertiary">
-            This round is closed. An admin can reopen it if a correction is needed.
+            Esta ronda está cerrada. Un admin puede reabrirla si hay que corregir.
         </p>
 
+        <!-- Sticky finish bar -->
+        <div
+            v-if="canFinish"
+            class="fixed inset-x-0 bottom-0 z-30 border-t border-border-subtle bg-surface-base/95 backdrop-blur"
+        >
+            <div class="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+                <div class="min-w-0 flex-1 text-xs text-text-tertiary">
+                    {{ countedCount }} de {{ items.length }} contados
+                </div>
+                <Button
+                    class="min-w-[10rem] justify-center"
+                    :loading="processing"
+                    :disabled="processing"
+                    @click="closeRound"
+                >
+                    <CheckCircle2 :size="16" /> Terminado
+                </Button>
+            </div>
+        </div>
+
         <BarcodeScannerModal :show="scanning" @close="scanning = false" @product-found="onProductFound" />
-    </AppLayout>
+    </CounterLayout>
 </template>

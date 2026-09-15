@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +48,32 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended($this->homeFor($request->user()));
+    }
+
+    /**
+     * Where a freshly logged-in user lands.
+     *
+     * Warehouse counters hold only counting permissions, so the office
+     * dashboard is useless to them — send them straight to their pending
+     * counts. Everyone else keeps the dashboard.
+     */
+    private function homeFor(?User $user): string
+    {
+        if ($user === null) {
+            return route('dashboard', absolute: false);
+        }
+
+        // Permissions that mean "this person works in the office app".
+        $officePermissions = [
+            'view_products', 'view_orders', 'manage_stock', 'manage_users',
+            'manage_roles', 'view_reports', 'view_dashboard',
+        ];
+
+        $isCounterOnly = $user->hasAnyPermission([Permission::COUNT_STOCK_AUDITS->value])
+            && ! $user->hasAnyPermission($officePermissions);
+
+        return route($isCounterOnly ? 'my-counts' : 'dashboard', absolute: false);
     }
 
     /**

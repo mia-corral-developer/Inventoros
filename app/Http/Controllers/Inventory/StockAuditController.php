@@ -13,6 +13,7 @@ use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockAudit;
 use App\Models\Inventory\StockAuditCount;
 use App\Models\Inventory\StockAuditItem;
+use App\Models\Inventory\StockAuditRound;
 use App\Models\User;
 use App\Services\StockAuditRoundService;
 use Illuminate\Http\JsonResponse;
@@ -759,6 +760,58 @@ class StockAuditController extends Controller
             'items' => $items,
             'blind' => $blind,
             'isAdmin' => $isAdmin,
+        ]);
+    }
+
+    /**
+     * Operator landing: the rounds THIS user still has to count.
+     *
+     * This is the counter's home after login — a short, mobile-first list of
+     * pending counts, no admin chrome.
+     */
+    public function myCounts(Request $request): Response
+    {
+        $user = $request->user();
+
+        $rounds = StockAuditRound::query()
+            ->with('stockAudit')
+            ->where('stock_audit_rounds.status', 'open')
+            ->where('stock_audit_rounds.assigned_to', $user->id)
+            ->whereHas('stockAudit', function ($q) use ($user) {
+                $q->where('organization_id', $user->organization_id)
+                    ->where('status', 'in_progress');
+            })
+            ->join('stock_audits', 'stock_audits.id', '=', 'stock_audit_rounds.stock_audit_id')
+            ->orderBy('stock_audits.created_at', 'desc')
+            ->orderBy('stock_audit_rounds.round_number')
+            ->select('stock_audit_rounds.*')
+            ->get();
+
+        $counts = $rounds->map(function (StockAuditRound $round) use ($user) {
+            $audit = $round->stockAudit;
+            $total = $audit->items()->count();
+            $counted = StockAuditCount::where('stock_audit_id', $audit->id)
+                ->where('round_number', $round->round_number)
+                ->where('counted_by', $user->id)
+                ->count();
+
+            return [
+                'url' => route('stock-audits.capture', [
+                    'stockAudit' => $audit->id,
+                    'round' => $round->round_number,
+                ]),
+                'audit_number' => $audit->audit_number,
+                'audit_name' => $audit->name,
+                'round_label' => $round->label,
+                'is_tiebreak' => (bool) $round->is_tiebreak,
+                'counted' => $counted,
+                'total' => $total,
+                'progress' => $total > 0 ? (int) round(($counted / $total) * 100) : 0,
+            ];
+        });
+
+        return Inertia::render('StockAudits/MyCounts', [
+            'counts' => $counts->values(),
         ]);
     }
 

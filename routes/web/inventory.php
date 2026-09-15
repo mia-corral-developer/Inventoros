@@ -116,6 +116,7 @@ Route::post('/stock-audits/{stockAudit}/items/{item}/resolve', [StockAuditContro
 
 // Multi-round mobile capture (Phase 4). A counter only needs count_stock_audits;
 // reopening a round stays admin-only.
+Route::get('/my-counts', [StockAuditController::class, 'myCounts'])->name('my-counts')->middleware('permission:count_stock_audits');
 Route::get('/stock-audits/{stockAudit}/capture', [StockAuditController::class, 'capture'])->name('stock-audits.capture')->middleware('permission:count_stock_audits');
 Route::post('/stock-audits/{stockAudit}/rounds/{round}/count', [StockAuditController::class, 'recordRoundCount'])->name('stock-audits.rounds.count')->middleware('permission:count_stock_audits');
 Route::post('/stock-audits/{stockAudit}/rounds/{round}/close', [StockAuditController::class, 'closeRound'])->name('stock-audits.rounds.close')->middleware('permission:count_stock_audits');
