@@ -41,6 +41,7 @@ import {
     Search,
     Menu,
     X,
+    LogOut,
 } from 'lucide-vue-next';
 
 import { usePermissions } from '@/composables/usePermissions';
@@ -253,11 +254,11 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
             </nav>
 
             <!-- User pill -->
-            <div class="px-3 py-3 border-t border-border-subtle shrink-0">
+            <div class="px-3 py-3 border-t border-border-subtle shrink-0 flex items-center gap-1">
                 <Link
                     :href="route('settings.account.index')"
                     data-testid="user-menu"
-                    class="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
+                    class="flex items-center gap-2.5 min-w-0 flex-1 px-2 py-1.5 rounded-md hover:bg-surface-overlay transition-colors ds-focus-ring"
                 >
                     <span class="h-7 w-7 rounded-full bg-surface-overlay grid place-items-center text-[11px] font-semibold text-text-primary shrink-0">
                         {{ (user?.name || '?').charAt(0).toUpperCase() }}
@@ -266,6 +267,17 @@ const isActive = (item) => item.active.some((pattern) => route().current(pattern
                         <p class="text-[13px] font-medium text-text-primary truncate">{{ user?.name }}</p>
                         <p class="text-[11px] text-text-tertiary truncate">{{ user?.email }}</p>
                     </div>
+                </Link>
+                <Link
+                    :href="route('logout')"
+                    method="post"
+                    as="button"
+                    data-testid="logout"
+                    title="Cerrar sesión"
+                    aria-label="Cerrar sesión"
+                    class="shrink-0 p-2 rounded-md text-text-tertiary hover:text-red-500 hover:bg-surface-overlay transition-colors ds-focus-ring"
+                >
+                    <LogOut :size="16" />
                 </Link>
             </div>
         </aside>
