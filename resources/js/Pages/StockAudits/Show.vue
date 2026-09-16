@@ -108,17 +108,31 @@ const saveResolve = async (row) => {
     }
 };
 
-const openTiebreak = () => {
+const openTiebreak = async () => {
     if (!confirm('Open the tiebreak round (C3) for this audit?')) return;
     tiebreakProcessing.value = true;
-    router.post(
-        route('stock-audits.tiebreak', props.audit.id),
-        {},
-        {
-            onFinish: () => { tiebreakProcessing.value = false; },
-            onSuccess: () => router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] }),
+    try {
+        // JSON endpoint (see StockAuditMultiRoundEndpointsTest) — must NOT go
+        // through the Inertia router, which requires an Inertia response.
+        const response = await fetch(route('stock-audits.tiebreak', props.audit.id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+        });
+        if (response.ok) {
+            router.reload({ only: ['audit', 'summary', 'variance', 'rounds'] });
+        } else {
+            const data = await response.json();
+            alert(data.message || 'Failed to open the tiebreak round');
         }
-    );
+    } catch (e) {
+        alert('An error occurred while opening the tiebreak round');
+    } finally {
+        tiebreakProcessing.value = false;
+    }
 };
 
 const statusVariant = (status) =>

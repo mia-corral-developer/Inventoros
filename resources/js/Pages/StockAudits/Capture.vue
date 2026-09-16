@@ -64,25 +64,34 @@ const switchRound = (n) => {
     router.get(route('stock-audits.capture', { stockAudit: props.audit.id, round: n }));
 };
 
+// The round endpoints (count / close / reopen) are JSON AJAX endpoints
+// (see StockAuditCaptureTest + StockAuditMultiRoundEndpointsTest). They must
+// be called with fetch(), NOT the Inertia router — the router requires an
+// Inertia response and fails on plain JSON ("a plain JSON response was received").
+const postJson = async (url, payload = {}) => {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+        },
+        body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+};
+
 const saveCount = async (item) => {
     const value = counts[item.id];
     if (value === null || value === '' || value === undefined) return;
     savingIds[item.id] = true;
     try {
-        const res = await fetch(
+        const { ok, data } = await postJson(
             route('stock-audits.rounds.count', { stockAudit: props.audit.id, round: props.activeRound.round_number }),
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                },
-                body: JSON.stringify({ item_id: item.id, counted_quantity: parseInt(value) }),
-            }
+            { item_id: item.id, counted_quantity: parseInt(value) }
         );
-        const data = await res.json();
-        if (!res.ok) alert(data.message || 'Failed to save count');
+        if (!ok) alert(data.message || 'Failed to save count');
     } catch (e) {
         alert('An error occurred while saving the count');
     } finally {
@@ -96,26 +105,41 @@ const onProductFound = (product) => {
     search.value = product.sku || product.name || product.barcode || '';
 };
 
-const closeRound = () => {
+const closeRound = async () => {
     if (!confirm(`¿Marcar la ronda ${props.activeRound.label} como terminada? Un admin aún puede reabrirla si hay que corregir.`)) return;
     processing.value = true;
-    router.post(
-        route('stock-audits.rounds.close', { stockAudit: props.audit.id, round: props.activeRound.round_number }),
-        {},
-        {
-            onFinish: () => { processing.value = false; },
-            onSuccess: () => router.visit(route('my-counts')),
+    try {
+        const { ok, data } = await postJson(
+            route('stock-audits.rounds.close', { stockAudit: props.audit.id, round: props.activeRound.round_number })
+        );
+        if (!ok) {
+            alert(data.message || 'No se pudo cerrar la ronda');
+            return;
         }
-    );
+        router.visit(route('my-counts'));
+    } catch (e) {
+        alert('Ocurrió un error al cerrar la ronda');
+    } finally {
+        processing.value = false;
+    }
 };
 
-const reopenRound = () => {
+const reopenRound = async () => {
     processing.value = true;
-    router.post(
-        route('stock-audits.rounds.reopen', { stockAudit: props.audit.id, round: props.activeRound.round_number }),
-        {},
-        { onFinish: () => { processing.value = false; }, onSuccess: () => router.reload() }
-    );
+    try {
+        const { ok, data } = await postJson(
+            route('stock-audits.rounds.reopen', { stockAudit: props.audit.id, round: props.activeRound.round_number })
+        );
+        if (!ok) {
+            alert(data.message || 'No se pudo reabrir la ronda');
+            return;
+        }
+        router.reload();
+    } catch (e) {
+        alert('Ocurrió un error al reabrir la ronda');
+    } finally {
+        processing.value = false;
+    }
 };
 </script>
 
